@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { Article } from "@/lib/db";
 import { ArticleCard } from "./ArticleCard";
 import { Button } from "./Button";
-import { Loader2 } from "lucide-react";
+import { Loader2, WandSparkles } from "lucide-react";
 import { getArticles } from "@/lib/db";
 
 export function NewsContent() {
@@ -107,6 +107,7 @@ export function NewsContent() {
           onClick={generateNewArticle}
           disabled={generating}
           loading={generating}
+          icon={<WandSparkles className="h-4 w-4" />}
         >
           {generating ? "Generating..." : "Generate New Article"}
         </Button>

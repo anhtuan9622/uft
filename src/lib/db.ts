@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { generateSitemap } from "./sitemap";
 
 export interface Article {
   id: string;
@@ -7,47 +8,95 @@ export interface Article {
 }
 
 export async function insertArticle(article: Article) {
-  const { data, error } = await supabase
-    .from("articles")
-    .insert([article])
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("articles")
+      .insert([article])
+      .select()
+      .single();
 
-  if (error) {
+    if (error) {
+      console.error("Error inserting article:", error);
+      throw error;
+    }
+
+    // Generate new sitemap after article insertion
+    try {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_BASE_URL || "https://universalfriscotx.com";
+      await generateSitemap(baseUrl);
+    } catch (error) {
+      console.error("Error generating sitemap after article insertion:", error);
+      // Don't throw the error as sitemap generation is not critical for article creation
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in insertArticle:", error);
     throw error;
   }
-
-  return data;
 }
 
 export async function getArticles(page: number = 1, limit: number = 10) {
-  const start = (page - 1) * limit;
-  const end = start + limit - 1;
+  try {
+    const start = (page - 1) * limit;
+    const end = start + limit - 1;
 
-  const { data, error } = await supabase
-    .from("articles")
-    .select("*")
-    .order("timestamp", { ascending: false })
-    .range(start, end);
+    const { data, error } = await supabase
+      .from("articles")
+      .select("*")
+      .order("timestamp", { ascending: false })
+      .range(start, end);
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.error("Error fetching articles:", error);
+      return [];
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in getArticles:", error);
+    return [];
   }
-
-  return data;
 }
 
 export async function getLatestArticle() {
-  const { data, error } = await supabase
-    .from("articles")
-    .select("*")
-    .order("timestamp", { ascending: false })
-    .limit(1)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("articles")
+      .select("*")
+      .order("timestamp", { ascending: false })
+      .limit(1)
+      .single();
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.error("Error fetching latest article:", error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in getLatestArticle:", error);
+    return null;
   }
+}
 
-  return data;
+export async function getArticle(id: string) {
+  try {
+    const { data, error } = await supabase
+      .from("articles")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching article:", error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in getArticle:", error);
+    return null;
+  }
 }

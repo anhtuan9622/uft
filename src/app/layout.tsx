@@ -19,8 +19,27 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Universal FT",
+  title: "Universal FT - Premarket news analysis for the modern investor.",
   description: "Premarket news analysis for the modern investor.",
+  icons: {
+    icon: "/favicon.svg",
+  },
+  themeColor: "#000000",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Universal FT",
+    description: "Premarket news analysis for the modern investor.",
+    images: ["/og-image.png"],
+  },
+  openGraph: {
+    title: "Universal FT",
+    description: "Premarket news analysis for the modern investor.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({
