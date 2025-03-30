@@ -6,14 +6,14 @@ import Link from "next/link";
 import { Button } from "@/components/Button";
 import { ArrowLeft } from "lucide-react";
 
-interface ArticlePageProps {
-  params: {
-    id: string;
-  };
-}
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
 
-export default async function ArticlePage({ params }: ArticlePageProps) {
-  const article = await getArticle(params.id);
+export default async function ArticlePage({ params }: Props) {
+  const { id } = await params;
+  const article = await getArticle(id);
 
   if (!article) {
     notFound();
