@@ -4,14 +4,14 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   // Verify the request is from Vercel Cron
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET_KEY}`) {
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     // Call the generate-content API
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/generate-content`
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/generate-content`,
     );
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     console.error("Error in cron job:", error);
     return NextResponse.json(
       { error: "Failed to generate content" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
