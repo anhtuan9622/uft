@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { generateSitemap } from "./sitemap";
+import { baseUrl } from "./constant";
 
 export interface Article {
   id: string;
@@ -22,8 +23,6 @@ export async function insertArticle(article: Article) {
 
     // Generate new sitemap after article insertion
     try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_URL || "https://universalfriscotx.com";
       await generateSitemap(baseUrl);
     } catch (error) {
       console.error("Error generating sitemap after article insertion:", error);

@@ -1,3 +1,4 @@
+import { baseUrl } from "@/lib/constant";
 import { NextResponse } from "next/server";
 
 // This is the cron job endpoint that will be called by Vercel
@@ -10,9 +11,7 @@ export async function GET(request: Request) {
 
   try {
     // Call the generate-content API
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/generate-content`,
-    );
+    const response = await fetch(`${baseUrl}/api/generate-content`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

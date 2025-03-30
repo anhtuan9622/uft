@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { generateSitemap } from "@/lib/sitemap";
+import { baseUrl } from "@/lib/constant";
 
 export async function GET() {
   try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL || "https://universalfriscotx.com";
     const sitemap = await generateSitemap(baseUrl);
 
     return new NextResponse(sitemap, {
