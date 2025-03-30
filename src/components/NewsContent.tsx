@@ -1,121 +1,139 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { NewsItem } from "@/lib/storage";
-import { Button } from "@/components/ui/button";
-import ReactMarkdown from "react-markdown";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { Article } from "@/lib/db";
+import { ArticleCard } from "./ArticleCard";
+import { Button } from "./Button";
+import { Loader2 } from "lucide-react";
+import { getArticles } from "@/lib/db";
 
 export function NewsContent() {
-  const [news, setNews] = useState<NewsItem[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const observer = useRef<IntersectionObserver | null>(null);
 
-  const fetchSavedNews = async () => {
+  // Fetch saved articles from the database
+  const fetchSavedArticles = async (pageNum: number = 1) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/news");
-      if (!response.ok) {
-        throw new Error("Failed to fetch news");
+      const data = await getArticles(pageNum);
+      // Convert timestamps to Date objects
+      const articlesWithDates = data.map((article) => ({
+        ...article,
+        timestamp: new Date(article.timestamp),
+      }));
+
+      if (pageNum === 1) {
+        setArticles(articlesWithDates);
+      } else {
+        setArticles((prev) => [...prev, ...articlesWithDates]);
       }
-      const data = await response.json();
-      setNews(data);
+      setHasMore(data.length === 10); // Assuming 10 items per page
     } catch (err) {
-      console.error("Error fetching news:", err);
+      console.error("Error fetching articles:", err);
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
   };
 
+  // Generate a new article
   const generateNewArticle = async () => {
     setGenerating(true);
     setError(null);
     try {
       const response = await fetch("/api/generate-content");
       if (!response.ok) {
-        throw new Error("Failed to generate news");
+        throw new Error("Failed to generate article");
       }
       const data = await response.json();
-      setNews([data, ...news]); // Add new article to the beginning of the list
+      // Convert timestamp to Date object for new article
+      const articleWithDate = {
+        ...data,
+        timestamp: new Date(data.timestamp),
+      };
+      setArticles([articleWithDate, ...articles]);
     } catch (err) {
-      console.error("Error generating news:", err);
+      console.error("Error generating article:", err);
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setGenerating(false);
     }
   };
 
-  useEffect(() => {
-    fetchSavedNews();
-  }, []);
+  // Load more articles when the user scrolls to the bottom
+  const lastArticleRef = useCallback(
+    (node: HTMLDivElement) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore],
+  );
 
-  if (loading) {
+  useEffect(() => {
+    fetchSavedArticles(page);
+  }, [page]);
+
+  if (error) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-[250px]" />
-        <Skeleton className="h-[200px] w-full" />
-        <Skeleton className="h-[200px] w-full" />
+      <div className="flex flex-col items-center">
+        <p className="text-red-500">Error: {error}</p>
+        <Button
+          onClick={() => fetchSavedArticles(1)}
+          disabled={loading}
+          loading={loading}
+        >
+          {loading ? "Fetching..." : "Try again"}
+        </Button>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <Card className="bg-destructive/10">
-        <CardContent className="p-6">
-          <p className="text-destructive mb-4">Error: {error}</p>
-          <Button onClick={fetchSavedNews} variant="outline">
-            Try Again
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <>
+      <div className="flex justify-end">
         <Button
           onClick={generateNewArticle}
-          variant="outline"
           disabled={generating}
+          loading={generating}
         >
           {generating ? "Generating..." : "Generate New Article"}
         </Button>
       </div>
 
-      {news.length === 0 ? (
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-muted-foreground mb-4">No articles available</p>
-            <Button onClick={generateNewArticle} variant="outline">
-              Generate First Article
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          {news.map((article) => (
-            <Card key={article.id}>
-              <CardHeader>
-                <CardTitle>
-                  {new Date(article.timestamp).toLocaleString()}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  <ReactMarkdown>{article.content}</ReactMarkdown>
-                </div>
-              </CardContent>
-              <hr />
-            </Card>
-          ))}
+      <div className="flex flex-col items-center">
+        <div>
+          {loading ? (
+            <div className="my-10">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : !loading && articles.length === 0 ? (
+            <div className="my-10">
+              <p>No articles yet...</p>
+            </div>
+          ) : (
+            articles.map((article, index) => (
+              <div
+                key={article.id}
+                ref={index === articles.length - 1 ? lastArticleRef : undefined}
+              >
+                <ArticleCard article={article} />
+              </div>
+            ))
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

@@ -9,7 +9,7 @@ export async function GET() {
     console.error("Error fetching news:", error);
     return NextResponse.json(
       { error: "Failed to fetch news" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

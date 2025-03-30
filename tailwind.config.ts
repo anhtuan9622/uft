@@ -1,18 +1,36 @@
 import type { Config } from "tailwindcss";
-import animate from "tailwindcss-animate";
-import typography from "@tailwindcss/typography";
 
-const config = {
-  content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
-  ],
+const config: Config = {
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        "space-grotesk": ["var(--font-space-grotesk)"],
+        sans: [
+          "Geist",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "sans-serif",
+        ],
+        mono: [
+          "Geist Mono",
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Monaco",
+          "Consolas",
+          "Liberation Mono",
+          "Courier New",
+          "monospace",
+        ],
+      },
+    },
   },
-  plugins: [animate, typography],
-} satisfies Config;
+  plugins: [],
+};
 
 export default config;

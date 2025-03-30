@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { saveNews } from "@/lib/storage";
+import { insertArticle } from "@/lib/db";
 
 if (!process.env.PERPLEXITY_API_KEY) {
   throw new Error("PERPLEXITY_API_KEY is not set");
@@ -9,20 +9,12 @@ export async function GET() {
   try {
     console.log("Starting content generation...");
 
-    const prompt = `“Summarize the latest global and U.S. key headlines from the past 12 hours. Include:
+    const prompt = `Summarize the latest global and U.S. key headlines from the past 12 hours. Includes:
     - Major U.S. news headlines (politics, economy, regulations, Fed updates, etc.)
-    - Recent macroeconomic data (inflation, interest rates, unemployment, GDP, etc.)
     - Key international news (geopolitics, economic policies, global conflicts, etc.)
-    - Geopolitical developments (e.g., conflicts, trade wars, government actions)
-    - Global stock market trends (U.S., Europe, Asia)
+    - Global stock market trends (U.S. futures, Europe, Asia)
     - Commodity and currency movements (oil, gold, USD, yields, etc.)
-
-    Then, analyze how each major news item might impact the stock market:
-    - Label each as bullish or bearish
-    - Briefly explain the reasoning behind each label
-    - Mention which sectors, ETFs, or specific stocks are likely to be affected
-
-    This summary will be used for daily premarket prep for traders and investors.
+    This article will be used for daily premarket prep for traders and investors.
 `;
 
     console.log("Sending request to Perplexity...");
@@ -37,8 +29,11 @@ export async function GET() {
         messages: [
           {
             role: "system",
-            content:
-              "You are a helpful assistant that provides accurate and up-to-date information in a concise manner.",
+            content: `You are a helpful assistant that provides accurate and up-to-date information in a concise manner. 
+              Keep the same format for the article for each response. 
+              The article should be in markdown format with the following structure: # Title, ## Major U.S. News Headlines, ## Key International News, ## Global Stock Market Trends, ## Commodity and Currency Movements, ## Analysis of News Impact on the Stock Market. 
+              Create a title that is short phrase humurous and engaging. Using bullet points, make sure to include the impact on the stock market for each news item and label news items as bullish or bearish.
+              `,
           },
           {
             role: "user",
@@ -46,8 +41,8 @@ export async function GET() {
           },
         ],
         max_tokens: 1000,
-        temperature: 0.7,
-        stream: false,
+        search_recency_filter: "day",
+        web_search_options: { search_content_size: "high" },
       }),
     });
 
@@ -55,7 +50,7 @@ export async function GET() {
 
     if (!response.ok) {
       throw new Error(
-        `Perplexity API error: ${response.status} ${response.statusText} - ${responseText}`
+        `Perplexity API error: ${response.status} ${response.statusText} - ${responseText}`,
       );
     }
 
@@ -72,21 +67,28 @@ export async function GET() {
 
     console.log("Received response from Perplexity");
 
-    // Save the generated content
-    const savedNews = saveNews(data.choices[0].message.content);
+    // Create article object
+    const article = {
+      id: Date.now().toString(),
+      content: data.choices[0].message.content,
+      timestamp: new Date().toISOString(),
+    };
 
-    return NextResponse.json(savedNews);
+    // Save article using the insertArticle function
+    const savedArticle = await insertArticle(article);
+
+    return NextResponse.json(savedArticle);
   } catch (error) {
     console.error("Error generating content:", error);
     if (error instanceof Error) {
       return NextResponse.json(
         { error: `Failed to generate content: ${error.message}` },
-        { status: 500 }
+        { status: 500 },
       );
     }
     return NextResponse.json(
       { error: "Failed to generate content" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
