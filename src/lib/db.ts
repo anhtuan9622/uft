@@ -1,6 +1,4 @@
 import { supabase } from "./supabase";
-import { generateSitemap } from "./sitemap";
-import { baseUrl } from "./constant";
 
 export interface Article {
   id: string;
@@ -19,14 +17,6 @@ export async function insertArticle(article: Article) {
     if (error) {
       console.error("Error inserting article:", error);
       throw error;
-    }
-
-    // Generate new sitemap after article insertion
-    try {
-      await generateSitemap(baseUrl);
-    } catch (error) {
-      console.error("Error generating sitemap after article insertion:", error);
-      // Don't throw the error as sitemap generation is not critical for article creation
     }
 
     return data;

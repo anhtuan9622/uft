@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { generateSitemap } from "@/lib/sitemap";
 import { baseUrl } from "@/lib/constant";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const sitemap = await generateSitemap(baseUrl);
