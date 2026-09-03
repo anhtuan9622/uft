@@ -35,7 +35,7 @@ export async function insertArticle(article: Article) {
 
     if (!resp.ok) {
       console.error("REST insert error:", resp.status, text);
-      const err: any = new Error("REST insert failed");
+      const err = new Error("REST insert failed") as Error & { code: number };
       err.code = resp.status;
       throw err;
     }
