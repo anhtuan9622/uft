@@ -6,11 +6,6 @@ const nextConfig: NextConfig = {
       allowedOrigins: ["*"],
     },
   },
-  async serverOptions() {
-    return {
-      port: 2024,
-    };
-  },
 };
 
 export default nextConfig;

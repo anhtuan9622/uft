@@ -1,4 +1,5 @@
-import { getArticles } from "./db";
+import { supabaseAdmin } from "./supabaseAdmin";
+import type { Article } from "./types";
 
 export interface SitemapEntry {
   url: string;
@@ -15,7 +16,19 @@ export interface SitemapEntry {
 }
 
 export async function generateSitemap(baseUrl: string): Promise<string> {
-  const articles = await getArticles(1, 100); // Get up to 100 latest articles
+  // Get up to 100 latest articles using the server admin client
+  const { data, error } = await supabaseAdmin
+    .from("articles")
+    .select("*")
+    .order("timestamp", { ascending: false })
+    .range(0, 99);
+
+  if (error) {
+    console.error("Error fetching articles for sitemap:", error);
+    return "";
+  }
+
+  const articles: Article[] = (data as Article[]) ?? [];
 
   const entries: SitemapEntry[] = [
     {
@@ -25,7 +38,10 @@ export async function generateSitemap(baseUrl: string): Promise<string> {
     },
     ...articles.map((article) => ({
       url: `${baseUrl}/article/${article.id}`,
-      lastmod: article.timestamp,
+      lastmod:
+        typeof article.timestamp === "string"
+          ? article.timestamp
+          : article.timestamp.toISOString(),
       changefreq: "weekly" as const,
       priority: 0.8,
     })),

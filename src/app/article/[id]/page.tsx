@@ -1,6 +1,6 @@
 import { ArticleCard } from "@/components/ArticleCard";
 import { Layout } from "@/components/Layout";
-import { getArticle } from "@/lib/db";
+import { getArticle } from "../../../lib/db.server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/Button";

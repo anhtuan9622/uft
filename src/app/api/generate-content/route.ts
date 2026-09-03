@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import { insertArticle } from "@/lib/db";
+import { insertArticle } from "../../../lib/db.server";
+
+export const runtime = "nodejs";
 
 if (!process.env.PERPLEXITY_API_KEY) {
   throw new Error("PERPLEXITY_API_KEY is not set");
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     console.log("Starting content generation...");
 
@@ -67,12 +69,54 @@ export async function GET() {
 
     console.log("Received response from Perplexity");
 
+    // Debug: confirm service role key is available in this runtime (do not log the key itself)
+    console.log(
+      "SUPABASE_SERVICE_ROLE_KEY present:",
+      !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    );
+
     // Create article object
     const article = {
       id: Date.now().toString(),
       content: data.choices[0].message.content,
       timestamp: new Date().toISOString(),
     };
+
+    // If diag query param present, attempt direct REST insert using service role key
+    const searchParams = new URL(request.url).searchParams;
+    if (searchParams.get("diag") === "1") {
+      if (
+        !process.env.SUPABASE_SERVICE_ROLE_KEY ||
+        !process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ID
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_PROJECT_ID",
+          },
+          { status: 500 },
+        );
+      }
+
+      const restUrl = `https://${process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ID}.supabase.co/rest/v1/articles`;
+      const restResp = await fetch(restUrl, {
+        method: "POST",
+        headers: {
+          apikey: process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([article]),
+      });
+
+      const restText = await restResp.text();
+      console.log("Direct REST insert status:", restResp.status, restText);
+
+      return NextResponse.json({
+        restStatus: restResp.status,
+        restBody: restText,
+      });
+    }
 
     // Save article using the insertArticle function
     const savedArticle = await insertArticle(article);

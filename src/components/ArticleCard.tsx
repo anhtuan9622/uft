@@ -1,4 +1,4 @@
-import { Article } from "@/lib/db";
+import { Article } from "@/lib/types";
 import ReactMarkdown from "react-markdown";
 
 interface ArticleCardProps {
